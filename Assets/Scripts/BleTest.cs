@@ -16,12 +16,13 @@ public class BleTest : MonoBehaviour
     };
     */
 
-    string targetDeviceName = "Xsens DOT";
-    string batteryService = "{15173000-4947-11e9-8646-d663bd873d93}"; // xsens dot battery service
+    private readonly string targetDeviceName = "Xsens DOT";
+    private readonly string batteryServiceUuid = "{15173000-4947-11e9-8646-d663bd873d93}"; // xsens dot battery service
+    private readonly string[] batteryCharacteristicsUuid = {"{15173001-4947-11e9-8646-d663bd873d93}"};
 
 
-    string serviceUuid = "{15173000-4947-11e9-8646-d663bd873d93}"; // xsens dot battery service
-    string[] characteristicUuids = {
+    //readonly string serviceUuid = "{15173000-4947-11e9-8646-d663bd873d93}"; // xsens dot battery service
+    readonly string[] characteristicUuids = {
                                      "{15173001-4947-11e9-8646-d663bd873d93}",      // CUUID 1
                                      "{15173001-4947-11e9-8646-d663bd873d93}"       // CUUID 2
     };
@@ -39,8 +40,9 @@ public class BleTest : MonoBehaviour
     // GUI elements
     public Text TextDiscoveredDevices, TextIsScanning, TextTargetDeviceConnection, TextTargetDeviceData;
     public Button ButtonEstablishConnection, ButtonStartScan;
-    int remoteAngle, lastRemoteAngle;
-    private int batteryLevel, lastBatteryLevel;
+    //int remoteAngle, lastRemoteAngle;
+    private int batteryLevel, lastBatteryLevel, batteryStatus;
+    
 
     // Start is called before the first frame update
     void Start()
@@ -57,14 +59,17 @@ public class BleTest : MonoBehaviour
         if (isScanning)
         {
             if (ButtonStartScan.enabled)
+            {
                 ButtonStartScan.enabled = false;
+            }
 
             if (discoveredDevices.Count > devicesCount)
             {
                 UpdateGuiText("scan");
                 devicesCount = discoveredDevices.Count;
             }                
-        } else
+        }
+        else
         {
             /* Restart scan in same play session not supported yet.
             if (!ButtonStartScan.enabled)
@@ -104,7 +109,7 @@ public class BleTest : MonoBehaviour
         CleanUp();
     }
 
-    private void OnApplicationQuit()
+    public void OnApplicationQuit()
     {
         CleanUp();
     }
@@ -153,16 +158,38 @@ public class BleTest : MonoBehaviour
     {
         byte[] packageReceived = BLE.ReadBytes();
         // Convert little Endian.
-        // In this example we're interested about an angle
+        // In this example we're interested about the battery
         // value on the first field of our package.
-        remoteAngle = packageReceived[0];
-        Debug.Log("Angle: " + remoteAngle);
+        //remoteAngle = packageReceived[0];
+        batteryLevel = packageReceived[0];
+        batteryStatus = packageReceived[1];
+
+        Debug.Log(ReadBatteryDetails(batteryLevel, batteryStatus));
         //Thread.Sleep(100);
+
+
     }
-        
+
+
+
+    string ReadBatteryDetails(int inBatteryLevel, int inBatteryStatus)
+    {
+        string[] batteryStatusVerbose = { "[NOT CHARGING]", "[CHARGING]" };
+
+        if (inBatteryStatus is 0 or 1)
+        {
+            return $"Battery Level: {inBatteryLevel}% {batteryStatusVerbose[inBatteryStatus]}";
+        }
+        else
+        {
+            return $"Battery Level: {inBatteryLevel}% and device charge status cannot be read.";
+        }
+    }
+
     void UpdateGuiText(string action)
     {
-        switch(action) {
+        switch(action)
+        {
             case "scan":
                 TextDiscoveredDevices.text = "";
                 foreach (KeyValuePair<string, string> entry in discoveredDevices)
@@ -181,10 +208,18 @@ public class BleTest : MonoBehaviour
                     readingThread = new Thread(ReadBleData);
                     readingThread.Start();
                 }
+                /*
                 if (remoteAngle != lastRemoteAngle)
                 {
                     TextTargetDeviceData.text = "Remote angle: " + remoteAngle;
                     lastRemoteAngle = remoteAngle;
+                }
+                */
+                if (batteryLevel != lastBatteryLevel)
+                {
+                    //TextTargetDeviceData.text = "Battery Level: " + batteryLevel;
+                    TextTargetDeviceData.text = ReadBatteryDetails(batteryLevel, batteryStatus);
+                    lastBatteryLevel = batteryLevel;
                 }
                 break;
         }
@@ -237,16 +272,19 @@ public class BleTest : MonoBehaviour
         {
             try
             {
-                ble.Connect(deviceId,
-                serviceUuid,
-                characteristicUuids);
-            } catch(Exception e)
+                //ble.Connect(deviceId, serviceUuid, characteristicUuids);
+                ble.Connect(deviceId, batteryServiceUuid, batteryCharacteristicsUuid);
+            } 
+            catch(Exception e)
             {
                 Debug.Log("Could not establish connection to device with ID " + deviceId + "\n" + e);
             }
         }
+
         if (ble.isConnected)
+        {
             Debug.Log("Connected to: " + targetDeviceName);
+        }
     }
 
     ulong ConvertLittleEndian(byte[] array)

@@ -376,9 +376,9 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1800233881}
-        m_TargetAssemblyTypeName: 
-        m_MethodName: QuitApplication
+      - m_Target: {fileID: 1800233882}
+        m_TargetAssemblyTypeName: BleTest, Assembly-CSharp
+        m_MethodName: OnApplicationQuit
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
