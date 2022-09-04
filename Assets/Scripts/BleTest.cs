@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -19,6 +20,7 @@ public class BleTest : MonoBehaviour
     private readonly string targetDeviceName = "Xsens DOT";
     private readonly string batteryServiceUuid = "{15173000-4947-11e9-8646-d663bd873d93}"; // xsens dot battery service
     private readonly string[] batteryCharacteristicsUuid = {"{15173001-4947-11e9-8646-d663bd873d93}"};
+    private string uiConsoleMessages = "";
 
     BLE ble;
     BLE.BLEScan scan;
@@ -32,7 +34,8 @@ public class BleTest : MonoBehaviour
 
     // GUI elements
     public Text TextDiscoveredDevices, TextIsScanning, TextTargetDeviceConnection, TextTargetDeviceData;
-    public Button ButtonEstablishConnection, ButtonStartScan;
+    public TextMeshProUGUI UiConsoleText;
+    public Button ButtonEstablishConnection, ButtonStartScan, ButtonStartStreaming;
     //int remoteAngle, lastRemoteAngle;
     private int batteryLevel, lastBatteryLevel, batteryStatus;
     
@@ -40,10 +43,13 @@ public class BleTest : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        //UiConsoleText = GetComponent<TextMeshProUGUI>();
         ble = new BLE();
         ButtonEstablishConnection.enabled = false;
+        ButtonStartStreaming.enabled = false;
         TextTargetDeviceConnection.text = targetDeviceName + " not found.";
         readingThread = new Thread(ReadBleData);
+        PrintToUiConsole("Console Ready!");
     }
 
     // Update is called once per frame
@@ -89,11 +95,12 @@ public class BleTest : MonoBehaviour
             {
                 UpdateGuiText("connected");
                 isConnected = true;
+            } 
             // Device was found, but not connected yet. 
-            } else if (!ButtonEstablishConnection.enabled && !isConnected)
+            else if (!ButtonEstablishConnection.enabled && !isConnected)
             {
                 ButtonEstablishConnection.enabled = true;
-                TextTargetDeviceConnection.text = "Found target device:\n" + targetDeviceName;
+                TextTargetDeviceConnection.text = "Found target device: " + targetDeviceName;
             } 
         } 
     }
@@ -168,15 +175,19 @@ public class BleTest : MonoBehaviour
     string ReadBatteryDetails(int inBatteryLevel, int inBatteryStatus)
     {
         string[] batteryStatusVerbose = { "[NOT CHARGING]", "[CHARGING]" };
+        string outString = "";
 
         if (inBatteryStatus is 0 or 1)
         {
-            return $"Battery Level: {inBatteryLevel}% {batteryStatusVerbose[inBatteryStatus]}";
+            outString = $"Battery Level: {inBatteryLevel}% {batteryStatusVerbose[inBatteryStatus]}";
         }
         else
         {
-            return $"Battery Level: {inBatteryLevel}% and device charge status cannot be read.";
+            outString = $"Battery Level: {inBatteryLevel}% and device charge status cannot be read.";
         }
+        //PrintToUiConsole(outString);
+        Debug.Log(outString);
+        return outString;
     }
 
     void UpdateGuiText(string action)
@@ -189,12 +200,13 @@ public class BleTest : MonoBehaviour
                 {
                     TextDiscoveredDevices.text += "DeviceID: " + entry.Key + "\nDeviceName: " + entry.Value + "\n\n";
                     Debug.Log("Added device: " + entry.Key);
+                    //PrintToUiConsole("Added device: " + entry.Key);
                 }
                 break;
 
             case "connected":
                 ButtonEstablishConnection.enabled = false;
-                TextTargetDeviceConnection.text = "Connected to target device:\n" + targetDeviceName;
+                TextTargetDeviceConnection.text = "Connected to: " + targetDeviceName;
                 break;
 
             case "writeData":
@@ -218,9 +230,11 @@ public class BleTest : MonoBehaviour
     {
         scan = BLE.ScanDevices();
         Debug.Log("BLE.ScanDevices() started.");
+        //PrintToUiConsole("BLE.ScanDevices() started");
         scan.Found = (_deviceId, deviceName) =>
         {
             Debug.Log("found device with name: " + deviceName);
+            //PrintToUiConsole("found device with name: " + deviceName);
             discoveredDevices.Add(_deviceId, deviceName);
 
             if (deviceId == null && deviceName == targetDeviceName)
@@ -231,6 +245,7 @@ public class BleTest : MonoBehaviour
         {
             isScanning = false;
             Debug.Log("scan finished");
+            //PrintToUiConsole("scan finished");
             if (deviceId == null)
             {
                 deviceId = "-1";
@@ -249,6 +264,7 @@ public class BleTest : MonoBehaviour
         if (deviceId == "-1")
         {
             Debug.Log("no device found!");
+            //PrintToUiConsole("no device found!");
             return;
         }
     }
@@ -258,6 +274,13 @@ public class BleTest : MonoBehaviour
     {
         connectionThread = new Thread(ConnectBleDevice);
         connectionThread.Start();
+    }
+
+    // Establish BLE connection and Stream.
+    public void StartStreamHandler()
+    {
+        //connectionThread = new Thread(ConnectBleDevice);
+        //connectionThread.Start();
     }
 
     void ConnectBleDevice()
@@ -271,12 +294,14 @@ public class BleTest : MonoBehaviour
             catch(Exception e)
             {
                 Debug.Log("Could not establish connection to device with ID " + deviceId + "\n" + e);
+                //PrintToUiConsole("Could not establish connection to device with ID " + deviceId + "\n" + e);
             }
         }
 
         if (ble.isConnected)
         {
             Debug.Log("Connected to: " + targetDeviceName);
+            //PrintToUiConsole("Connected to: " + targetDeviceName);
         }
     }
 
@@ -290,5 +315,12 @@ public class BleTest : MonoBehaviour
             pos += 8;
         }
         return result;
+    }
+
+    void PrintToUiConsole(string msg)
+    {
+        uiConsoleMessages = msg + "\n" + uiConsoleMessages;
+        UiConsoleText.text = uiConsoleMessages;
+        Debug.Log(msg);
     }
 }
