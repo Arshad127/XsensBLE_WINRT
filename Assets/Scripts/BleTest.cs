@@ -20,13 +20,6 @@ public class BleTest : MonoBehaviour
     private readonly string batteryServiceUuid = "{15173000-4947-11e9-8646-d663bd873d93}"; // xsens dot battery service
     private readonly string[] batteryCharacteristicsUuid = {"{15173001-4947-11e9-8646-d663bd873d93}"};
 
-
-    //readonly string serviceUuid = "{15173000-4947-11e9-8646-d663bd873d93}"; // xsens dot battery service
-    readonly string[] characteristicUuids = {
-                                     "{15173001-4947-11e9-8646-d663bd873d93}",      // CUUID 1
-                                     "{15173001-4947-11e9-8646-d663bd873d93}"       // CUUID 2
-    };
-
     BLE ble;
     BLE.BLEScan scan;
     bool isScanning = false, isConnected = false;
@@ -58,6 +51,7 @@ public class BleTest : MonoBehaviour
     {  
         if (isScanning)
         {
+            // if you are currently scanning, you can't hit scan
             if (ButtonStartScan.enabled)
             {
                 ButtonStartScan.enabled = false;
@@ -115,8 +109,7 @@ public class BleTest : MonoBehaviour
     }
 
     // Prevent threading issues and free BLE stack.
-    // Can cause Unity to freeze and lead
-    // to errors when omitted.
+    // Can cause Unity to freeze and lead to errors when omitted.
     private void CleanUp()
     {
         try
@@ -125,12 +118,14 @@ public class BleTest : MonoBehaviour
             ble.Close();
             scanningThread.Abort();
             connectionThread.Abort();
-        } catch(NullReferenceException e)
+        }
+        catch(NullReferenceException e)
         {
             Debug.Log("Thread or object never initialized.\n" + e);
         }        
     }
 
+    // Hit the scan button
     public void StartScanHandler()
     {
         devicesCount = 0;
@@ -143,6 +138,7 @@ public class BleTest : MonoBehaviour
         TextDiscoveredDevices.text = "";
     }
 
+    // Hit the restart button
     public void ResetHandler()
     {
         TextTargetDeviceData.text = "";
@@ -166,12 +162,9 @@ public class BleTest : MonoBehaviour
 
         Debug.Log(ReadBatteryDetails(batteryLevel, batteryStatus));
         //Thread.Sleep(100);
-
-
     }
 
-
-
+    
     string ReadBatteryDetails(int inBatteryLevel, int inBatteryStatus)
     {
         string[] batteryStatusVerbose = { "[NOT CHARGING]", "[CHARGING]" };
@@ -198,23 +191,19 @@ public class BleTest : MonoBehaviour
                     Debug.Log("Added device: " + entry.Key);
                 }
                 break;
+
             case "connected":
                 ButtonEstablishConnection.enabled = false;
                 TextTargetDeviceConnection.text = "Connected to target device:\n" + targetDeviceName;
                 break;
+
             case "writeData":
                 if (!readingThread.IsAlive)
                 {
                     readingThread = new Thread(ReadBleData);
                     readingThread.Start();
                 }
-                /*
-                if (remoteAngle != lastRemoteAngle)
-                {
-                    TextTargetDeviceData.text = "Remote angle: " + remoteAngle;
-                    lastRemoteAngle = remoteAngle;
-                }
-                */
+
                 if (batteryLevel != lastBatteryLevel)
                 {
                     //TextTargetDeviceData.text = "Battery Level: " + batteryLevel;
@@ -243,10 +232,16 @@ public class BleTest : MonoBehaviour
             isScanning = false;
             Debug.Log("scan finished");
             if (deviceId == null)
+            {
                 deviceId = "-1";
+            }
         };
+
         while (deviceId == null)
+        {
             Thread.Sleep(500);
+        }
+
         scan.Cancel();
         scanningThread = null;
         isScanning = false;
@@ -258,8 +253,7 @@ public class BleTest : MonoBehaviour
         }
     }
 
-    // Start establish BLE connection with
-    // target device in dedicated thread.
+    // Start establish BLE connection with target device in dedicated thread.
     public void StartConHandler()
     {
         connectionThread = new Thread(ConnectBleDevice);
@@ -272,7 +266,6 @@ public class BleTest : MonoBehaviour
         {
             try
             {
-                //ble.Connect(deviceId, serviceUuid, characteristicUuids);
                 ble.Connect(deviceId, batteryServiceUuid, batteryCharacteristicsUuid);
             } 
             catch(Exception e)

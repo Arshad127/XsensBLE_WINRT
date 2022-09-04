@@ -125,9 +125,15 @@ public class BLE
     public static BLEScan ScanDevices()
     {
         if (scanThread == Thread.CurrentThread)
+        {
             throw new InvalidOperationException("a new scan can not be started from a callback of the previous scan");
+
+        }
         else if (scanThread != null)
+        {
             throw new InvalidOperationException("the old scan is still running");
+        }
+
         currentScan.Found = null;
         currentScan.Finished = null;
         scanThread = new Thread(() =>
@@ -186,15 +192,23 @@ public class BLE
     public bool Connect(string deviceId, string serviceUuid, string[] characteristicUuids)
     {
         if (isConnected)
+        {
             return false;
+        }
+            
         Debug.Log("retrieving ble profile...");
         RetrieveProfile(deviceId, serviceUuid);
         if (GetError() != "Ok")
+        {
             throw new Exception("Connection failed: " + GetError());
+        }
+
         Debug.Log("subscribing to characteristics...");
         bool result = Subscribe(deviceId, serviceUuid, characteristicUuids);
         if (GetError() != "Ok" || !result)
+        {
             throw new Exception("Connection failed: " + GetError());
+        }
         isConnected = true;
         return true;
     }
