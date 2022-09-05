@@ -36,7 +36,7 @@ public class BleTest : MonoBehaviour
     // GUI elements
     public Text TextDiscoveredDevices, TextIsScanning, TextTargetDeviceConnection, TextTargetDeviceData;
     public TextMeshProUGUI UiConsoleText, UiStreamingText;
-    public Button ButtonEstablishConnection, ButtonStartScan, ButtonStartStreaming, ButtonStopStreaming;
+    public Button ButtonEstablishConnection, ButtonStartScan, ButtonStartStreaming, ButtonStopStreaming, BlinkButton;
 
     private int batteryLevel, lastBatteryLevel, batteryStatus;
     
@@ -49,6 +49,7 @@ public class BleTest : MonoBehaviour
         ButtonEstablishConnection.enabled = false;
         //ButtonStopStreaming.enabled = false;
         //ButtonStartStreaming.enabled = false;
+        //BlinkButton.enabled = false;
         TextTargetDeviceConnection.text = targetDeviceName + " not found.";
         readingThread = new Thread(ReadBleData);
         PrintToUiConsole("Console Ready!");
@@ -105,7 +106,22 @@ public class BleTest : MonoBehaviour
                 ButtonEstablishConnection.enabled = true;
                 TextTargetDeviceConnection.text = "Found target device: " + targetDeviceName;
             } 
-        } 
+        }
+
+        if (ble!= null)
+        {
+            if (ble.isConnected)
+            {
+                //Debug.Log("Connected to: " + targetDeviceName);
+                UiStreamingText.text = $"BLE connection to {targetDeviceName} successful";
+            }
+            else
+            {
+                //Debug.Log("No Connection to: " + targetDeviceName);
+                UiStreamingText.text = $"BLE connection to {targetDeviceName} unsuccessful";
+
+            }
+        }
     }
 
     private void OnDestroy()
@@ -146,7 +162,7 @@ public class BleTest : MonoBehaviour
         discoveredDevices.Clear();
         scanningThread = new Thread(ScanBleDevices);
         scanningThread.Start();
-        TextIsScanning.color = new Color(244, 180, 26);
+        //TextIsScanning.color = new Color(244, 180, 26);
         TextIsScanning.text = "Scanning...";
         TextDiscoveredDevices.text = "";
     }
@@ -290,8 +306,13 @@ public class BleTest : MonoBehaviour
     public void StartStreamHandler()
     {
         PrintToUiConsole("Starting Streaming");
-        streamingThread = new Thread(ConnectBleDevice);
+        streamingThread = new Thread(StreamData);
         streamingThread.Start();
+    }
+
+    public void BlinkHandle()
+    {
+        PrintToUiConsole("Send blink handle");
     }
 
     public void StopStreamHandler()
@@ -321,7 +342,7 @@ public class BleTest : MonoBehaviour
             try
             {
                 ble.Connect(deviceId, batteryServiceUuid, batteryCharacteristicsUuid);
-            } 
+            }
             catch(Exception e)
             {
                 Debug.Log("Could not establish connection to device with ID " + deviceId + "\n" + e);
@@ -350,7 +371,7 @@ public class BleTest : MonoBehaviour
 
     void PrintToUiConsole(string newEvent)
     {
-        uiConsoleMessages = $"{DateTime.Now.ToLongTimeString()} -> {newEvent}\n{uiConsoleMessages}";
+        uiConsoleMessages = $"[{DateTime.Now.ToLongTimeString()}] {newEvent}\n{uiConsoleMessages}";
         //uiConsoleMessages = msg + "\n" + uiConsoleMessages;
         UiConsoleText.text = uiConsoleMessages;
         Debug.Log(newEvent);

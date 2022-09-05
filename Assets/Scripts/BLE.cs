@@ -197,7 +197,9 @@ public class BLE
         {
             bool res = Impl.SubscribeCharacteristic(deviceId, serviceUuids, characteristicUuid);
             if (!res)
+            {
                 return false;
+            }
         }
         return true;
     }
