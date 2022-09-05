@@ -228,10 +228,17 @@ public class BLE
         return true;
     }
 
+    public bool XsensBlink(string deviceId, string serviceUuid, string characteristicUuid, byte[] data)
+    {
+        return WritePackage( deviceId, serviceUuid, characteristicUuid, data);
+    }
+
     public static bool WritePackage(string deviceId, string serviceUuid, string characteristicUuid, byte[] data)
     {
+        Debug.Log($"Writing to {deviceId} for blink");
         Impl.BLEData packageSend;
-        packageSend.buf = new byte[512];
+        // packageSend.buf = new byte[512];
+        packageSend.buf = new byte[32];
         packageSend.size = (short)data.Length;
         packageSend.deviceId = deviceId;
         packageSend.serviceUuid = serviceUuid;
@@ -258,10 +265,14 @@ public class BLE
         Impl.BLEData packageReceived;
         bool result = Impl.PollData(out packageReceived, true);
 
+
+        Debug.Log($">>>> ReadBytes {packageReceived.buf.Length}");
+
         if (result)
         {
             Debug.Log("Size: " + packageReceived.size);
             Debug.Log("From: " + packageReceived.deviceId);
+
 
             if (packageReceived.size > 512)
             {

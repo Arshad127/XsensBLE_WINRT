@@ -31,7 +31,7 @@ public class BleTest : MonoBehaviour
     int devicesCount = 0;
 
     // BLE Threads 
-    Thread scanningThread, connectionThread, readingThread, streamingThread;
+    Thread scanningThread, connectionThread, readingThread, streamingThread, testThread;
 
     // GUI elements
     public Text TextDiscoveredDevices, TextIsScanning, TextTargetDeviceConnection, TextTargetDeviceData;
@@ -187,6 +187,10 @@ public class BleTest : MonoBehaviour
         // In this example we're interested about the battery
         // value on the first field of our package.
         //remoteAngle = packageReceived[0];
+
+        Debug.Log($">>>> ReadBleData {packageReceived.Length}");
+
+
         batteryLevel = packageReceived[0];
         batteryStatus = packageReceived[1];
 
@@ -248,6 +252,15 @@ public class BleTest : MonoBehaviour
                 break;
         }
     }
+
+
+    void readtest()
+    {
+        string batteryServiceUuid = "{15173000-4947-11e9-8646-d663bd873d93}";
+        string[] batteryCharacteristicsUuid = {"{15173001-4947-11e9-8646-d663bd873d93}"};
+    }
+
+
 
     void ScanBleDevices() // runs in the scanning thread
     {
@@ -312,7 +325,29 @@ public class BleTest : MonoBehaviour
 
     public void BlinkHandle()
     {
+        /*
         PrintToUiConsole("Send blink handle");
+        testThread = new Thread(TryBlinking);
+        testThread.Start();
+        */
+    }
+
+    void TryBlinking()
+    {
+        if (isConnected)
+        {
+            if (ble != null)
+            {
+                //byte[] dataStruct = new byte[1];
+                //dataStruct[1] = 0x01;
+
+                ble.XsensBlink(deviceId, "15171000-4947-11e9-8646-d663bd873d93", "15171002-4947-11e9-8646-d663bd873d93", new byte[] { 0x01 });
+            }
+        }
+        else
+        {
+            PrintToUiConsole($"Not connected to {targetDeviceName} and hence cannot blink my dude");
+        }
     }
 
     public void StopStreamHandler()
