@@ -134,6 +134,7 @@ public class BLE
             throw new InvalidOperationException("the old scan is still running");
         }
 
+        // Variables Initiation
         currentScan.Found = null;
         currentScan.Finished = null;
         scanThread = new Thread(() =>
@@ -142,6 +143,7 @@ public class BLE
             Impl.DeviceUpdate res = new Impl.DeviceUpdate();
             List<string> deviceIds = new List<string>();
             Dictionary<string, string> deviceNames = new Dictionary<string, string>();
+
             //Impl.ScanStatus status;
             while (Impl.PollDevice(out res, true) != Impl.ScanStatus.FINISHED)
             {
@@ -150,12 +152,18 @@ public class BLE
                     deviceIds.Add(res.id);
                     deviceNames.Add(res.id, res.name);
                 }
+
                 // connectable device
                 if (deviceIds.Contains(res.id) && res.isConnectable)
+                {
                     currentScan.Found?.Invoke(res.id, deviceNames[res.id]);
+                }
+
                 // check if scan was cancelled in callback
                 if (currentScan.cancelled)
+                {
                     break;
+                }
             }
             currentScan.Finished?.Invoke();
             scanThread = null;
@@ -169,13 +177,18 @@ public class BLE
         Impl.ScanServices(deviceId);
         Impl.Service service = new Impl.Service();
         while (Impl.PollService(out service, true) != Impl.ScanStatus.FINISHED)
+        {
             Debug.Log("service found: " + service.uuid);
+        }
+
         // wait some delay to prevent error
         Thread.Sleep(200);
         Impl.ScanCharacteristics(deviceId, serviceUuid);
         Impl.Characteristic c = new Impl.Characteristic();
         while (Impl.PollCharacteristic(out c, true) != Impl.ScanStatus.FINISHED)
+        {
             Debug.Log("characteristic found: " + c.uuid + ", user description: " + c.userDescription);
+        }
     }
 
     public static bool Subscribe(string deviceId, string serviceUuids, string[] characteristicUuids)
@@ -203,7 +216,7 @@ public class BLE
             throw new Exception("Connection failed: " + GetError());
         }
 
-        Debug.Log("subscribing to characteristics...");
+        Debug.Log("Subscribing to characteristics...");
         bool result = Subscribe(deviceId, serviceUuid, characteristicUuids);
         if (GetError() != "Ok" || !result)
         {

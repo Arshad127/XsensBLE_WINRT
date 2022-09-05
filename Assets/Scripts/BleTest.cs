@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -30,13 +31,13 @@ public class BleTest : MonoBehaviour
     int devicesCount = 0;
 
     // BLE Threads 
-    Thread scanningThread, connectionThread, readingThread;
+    Thread scanningThread, connectionThread, readingThread, streamingThread;
 
     // GUI elements
     public Text TextDiscoveredDevices, TextIsScanning, TextTargetDeviceConnection, TextTargetDeviceData;
-    public TextMeshProUGUI UiConsoleText;
-    public Button ButtonEstablishConnection, ButtonStartScan, ButtonStartStreaming;
-    //int remoteAngle, lastRemoteAngle;
+    public TextMeshProUGUI UiConsoleText, UiStreamingText;
+    public Button ButtonEstablishConnection, ButtonStartScan, ButtonStartStreaming, ButtonStopStreaming;
+
     private int batteryLevel, lastBatteryLevel, batteryStatus;
     
 
@@ -46,10 +47,12 @@ public class BleTest : MonoBehaviour
         //UiConsoleText = GetComponent<TextMeshProUGUI>();
         ble = new BLE();
         ButtonEstablishConnection.enabled = false;
-        ButtonStartStreaming.enabled = false;
+        //ButtonStopStreaming.enabled = false;
+        //ButtonStartStreaming.enabled = false;
         TextTargetDeviceConnection.text = targetDeviceName + " not found.";
         readingThread = new Thread(ReadBleData);
         PrintToUiConsole("Console Ready!");
+        UiStreamingText.text = "Streaming output text area is linked and ready!";
     }
 
     // Update is called once per frame
@@ -107,11 +110,13 @@ public class BleTest : MonoBehaviour
 
     private void OnDestroy()
     {
+        PrintToUiConsole("OnDestroy has been called...");
         CleanUp();
     }
 
     public void OnApplicationQuit()
     {
+        PrintToUiConsole("Closing Application...");
         CleanUp();
     }
 
@@ -135,6 +140,7 @@ public class BleTest : MonoBehaviour
     // Hit the scan button
     public void StartScanHandler()
     {
+        PrintToUiConsole("Scan started");
         devicesCount = 0;
         isScanning = true;
         discoveredDevices.Clear();
@@ -148,6 +154,7 @@ public class BleTest : MonoBehaviour
     // Hit the restart button
     public void ResetHandler()
     {
+        PrintToUiConsole("Restarting");
         TextTargetDeviceData.text = "";
         TextTargetDeviceConnection.text = targetDeviceName + " not found.";
         // Reset previous discovered devices
@@ -226,25 +233,27 @@ public class BleTest : MonoBehaviour
         }
     }
 
-    void ScanBleDevices()
+    void ScanBleDevices() // runs in the scanning thread
     {
         scan = BLE.ScanDevices();
         Debug.Log("BLE.ScanDevices() started.");
         //PrintToUiConsole("BLE.ScanDevices() started");
         scan.Found = (_deviceId, deviceName) =>
         {
-            Debug.Log("found device with name: " + deviceName);
-            //PrintToUiConsole("found device with name: " + deviceName);
+            Debug.Log($"Found device with name: {deviceName} and ID: {_deviceId}");
             discoveredDevices.Add(_deviceId, deviceName);
 
+            // finding the Xsens DOT
             if (deviceId == null && deviceName == targetDeviceName)
+            {
                 deviceId = _deviceId;
+            }
         };
 
         scan.Finished = () =>
         {
             isScanning = false;
-            Debug.Log("scan finished");
+            Debug.Log("Scanning finito");
             //PrintToUiConsole("scan finished");
             if (deviceId == null)
             {
@@ -272,6 +281,7 @@ public class BleTest : MonoBehaviour
     // Start establish BLE connection with target device in dedicated thread.
     public void StartConHandler()
     {
+        PrintToUiConsole("Connection Attempt");
         connectionThread = new Thread(ConnectBleDevice);
         connectionThread.Start();
     }
@@ -279,8 +289,29 @@ public class BleTest : MonoBehaviour
     // Establish BLE connection and Stream.
     public void StartStreamHandler()
     {
-        //connectionThread = new Thread(ConnectBleDevice);
-        //connectionThread.Start();
+        PrintToUiConsole("Starting Streaming");
+        streamingThread = new Thread(ConnectBleDevice);
+        streamingThread.Start();
+    }
+
+    public void StopStreamHandler()
+    {
+        PrintToUiConsole("Stopping Streaming");
+        if (streamingThread != null)
+        {
+            if (streamingThread.IsAlive)
+            {
+                streamingThread.Abort();
+            }
+        }
+    }
+
+    void StreamData()
+    {
+        if (deviceId != null)
+        {
+
+        }
     }
 
     void ConnectBleDevice()
@@ -317,10 +348,13 @@ public class BleTest : MonoBehaviour
         return result;
     }
 
-    void PrintToUiConsole(string msg)
+    void PrintToUiConsole(string newEvent)
     {
-        uiConsoleMessages = msg + "\n" + uiConsoleMessages;
+        uiConsoleMessages = $"{DateTime.Now.ToLongTimeString()} -> {newEvent}\n{uiConsoleMessages}";
+        //uiConsoleMessages = msg + "\n" + uiConsoleMessages;
         UiConsoleText.text = uiConsoleMessages;
-        Debug.Log(msg);
+        Debug.Log(newEvent);
     }
+
+
 }
