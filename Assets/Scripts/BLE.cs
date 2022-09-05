@@ -253,14 +253,17 @@ public class BLE
         if (result)
         {
             if (packageReceived.size > 512)
+            {
+                Debug.Log("received package from characteristic: " + packageReceived.characteristicUuid
+                                                                + " and size " + packageReceived.size + " use packageReceived.buf to access the data.");
                 throw new ArgumentOutOfRangeException("Please keep your ble package at a size of maximum 512, cf. spec!\n"
                     + "This is to prevent package splitting and minimize latency.");
-            Debug.Log("received package from characteristic: " + packageReceived.characteristicUuid
-                + " and size " + packageReceived.size + " use packageReceived.buf to access the data.");
+            }
+
         }
     }
 
-    public static byte[] ReadBytes()
+    public byte[] ReadBytes()
     {
         Impl.BLEData packageReceived;
         bool result = Impl.PollData(out packageReceived, true);

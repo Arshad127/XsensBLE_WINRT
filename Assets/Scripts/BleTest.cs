@@ -182,11 +182,7 @@ public class BleTest : MonoBehaviour
 
     private void ReadBleData(object obj)
     {
-        byte[] packageReceived = BLE.ReadBytes();
-        // Convert little Endian.
-        // In this example we're interested about the battery
-        // value on the first field of our package.
-        //remoteAngle = packageReceived[0];
+        byte[] packageReceived = ble.ReadBytes();
 
         Debug.Log($">>>> ReadBleData {packageReceived.Length}");
 
@@ -258,6 +254,21 @@ public class BleTest : MonoBehaviour
     {
         string batteryServiceUuid = "{15173000-4947-11e9-8646-d663bd873d93}";
         string[] batteryCharacteristicsUuid = {"{15173001-4947-11e9-8646-d663bd873d93}"};
+        
+
+        
+
+        // Read all bytes :
+        byte[] packageReceived = ble.ReadBytes();
+
+        Debug.Log($">>>> ReadBleData {packageReceived.Length}");
+
+
+        batteryLevel = packageReceived[0];
+        batteryStatus = packageReceived[1];
+
+        Debug.Log(ReadBatteryDetails(batteryLevel, batteryStatus));
+
     }
 
 
@@ -330,6 +341,10 @@ public class BleTest : MonoBehaviour
         testThread = new Thread(TryBlinking);
         testThread.Start();
         */
+
+        PrintToUiConsole("Running read test");
+        testThread = new Thread(readtest);
+        testThread.Start();
     }
 
     void TryBlinking()
